@@ -86,6 +86,37 @@ class Decoder(chainer.Chain):
                 h = self.c7(h)
         return h
 
+class ProbDecoder(chainer.Chain):
+    def __init__(self, out_ch):
+        w = chainer.initializers.Normal(0.02)
+        super(ProbDecoder, self).__init__()
+        with self.init_scope():
+            self.c0 = ConvBNR(512, 512, use_bn=True, sample='up',
+                              activation=F.relu, dropout=True)
+            self.c1 = ConvBNR(1024, 512, use_bn=True,
+                              sample='up', activation=F.relu, dropout=True)
+            self.c2 = ConvBNR(1024, 512, use_bn=True,
+                              sample='up', activation=F.relu, dropout=True)
+            self.c3 = ConvBNR(1024, 512, use_bn=True,
+                              sample='up', activation=F.relu, dropout=False)
+            self.c4 = ConvBNR(1024, 256, use_bn=True,
+                              sample='up', activation=F.relu, dropout=False)
+            self.c5 = ConvBNR(512, 128, use_bn=True, sample='up',
+                              activation=F.relu, dropout=False)
+            self.c6 = ConvBNR(256, 64, use_bn=True, sample='up',
+                              activation=F.relu, dropout=False)
+            self.c7 = L.Convolution2D(128, out_ch, 3, 1, 1, initialW=w)
+
+    def forward(self, hs):
+        h = self.c0(hs[-1])
+        for i in range(1, 8):
+            h = F.concat([h, F.dropout(hs[-i-1])])
+            if i < 7:
+                h = self['c%d' % i](h)
+            else:
+                h = self.c7(h)
+        return h
+
 class Discriminator(chainer.Chain):
     def __init__(self, in_ch, out_ch):
         w = chainer.initializers.Normal(0.02)

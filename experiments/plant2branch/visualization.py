@@ -1,7 +1,7 @@
 import random
 import argparse
 from pathlib import Path
-
+from tqdm import tqdm
 from PIL import Image
 import numpy as np
 import chainer
@@ -19,10 +19,17 @@ def main():
         description='chainer implementation of pix2pix')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
         help='GPU ID (negative value indicates CPU)')
+    parser.add_argument('--dec', '-d', type=str, default='dec_model.npz',
+        help='decoder model')
+    parser.add_argument('--enc', '-e', type=str, default='enc_model.npz',
+        help='encoder model')
     args = parser.parse_args()
 
     enc = Encoder(in_ch=3)
     dec = Decoder(out_ch=1)
+
+    chainer.serializers.load_npz(str(MODEL_PATH.joinpath(args.dec)), dec)
+    chainer.serializers.load_npz(str(MODEL_PATH.joinpath(args.enc)), enc)
 
     if args.gpu >= 0:
         chainer.cuda.get_device(args.gpu).use()  # Make a specified GPU current
@@ -30,10 +37,11 @@ def main():
         dec.to_gpu()
     xp = enc.xp
 
-    branch_images = np.zeros((12, 256, 256))
-    plant_images = np.zeros((12, 256, 256, 3))
-    p2b_images = np.zeros((12, 256, 256))
-    for i in range(1,12):
+    branch_images = np.zeros((12, 256, 256), dtype=np.uint8)
+    plant_images = np.zeros((12, 256, 256, 3), dtype=np.uint8)
+    p2b_images = np.zeros((12, 256, 256), dtype=np.uint8)
+
+    for i in tqdm(range(1,12)):
         branch_path = DATASET_PATH.joinpath('branch', str(i))
         plant_path = DATASET_PATH.joinpath('plant', str(i))
         name = random.choice([_ for _ in branch_path.glob('*.png')]).name
@@ -42,21 +50,24 @@ def main():
 
         # open image
         branch_image = np.asarray(Image.open(branch_image_path).convert('L'))
-        branch_images[i,:] = branch_image
+        branch_images[i-1,:] = branch_image
         plant_image = np.asarray(Image.open(plant_image_path).convert('RGB'))
-        plant_images[i,:] = plant_image
+        plant_images[i-1,:] = plant_image
 
         plant_image = xp.array(plant_image).astype("f").transpose(2, 0, 1) / 128.0-1.0
         plant_image = plant_image.reshape(1, *plant_image.shape)
-        prob = np.ones((1, 1))
-        with chainer.no_backprop_mode():
-            pass
-            # for j in range(1):
-            #     p2b_image = np.clip(dec(enc(plant_image)).data.get()[0,:], -1.0, 1.0) * 128 + 128
-            #     print(p2b_image.shape, p2b_image.max(), p2b_image.min())
-            #     # p2b_image = np.asarray(np.clip(p2b_image * 128 + 128, 0.0, 255.0), dtype=np.uint8).reshape(256,256)
-            #     # Image.fromarray(p2b_image).save('{}.png'.format(j))
-        break
+
+        with chainer.no_backprop_mode(), chainer.using_config('train', False):
+            p2b_image = np.asarray(dec(enc(plant_image)).data.get())
+            p2b_image = np.asarray(np.clip(p2b_image * 128 + 128, 0.0, 255.0), dtype=np.uint8).reshape(256, 256)
+        p2b_images[i-1, :] = p2b_image
+
+    Image.fromarray(branch_images.reshape(3, 4, 256, 256).transpose(0, 2, 1, 3).reshape(3*256, 4*256))\
+        .save(str(RESULT_PATH.joinpath('branch_image.png')))
+    Image.fromarray(plant_images.reshape(3, 4, 256, 256, 3).transpose(0, 2, 1, 3, 4).reshape(3*256, 4*256, 3))\
+        .save(str(RESULT_PATH.joinpath('plant_image.png')))
+    Image.fromarray(p2b_images.reshape(3, 4, 256, 256).transpose(0, 2, 1, 3).reshape(3*256, 4*256))\
+        .save(str(RESULT_PATH.joinpath('p2b_image.png')))
 
 
 

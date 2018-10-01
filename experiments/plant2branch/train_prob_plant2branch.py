@@ -5,7 +5,7 @@ import chainer
 from chainer import training
 from chainer.training import extensions
 
-from net import Decoder, Discriminator, Encoder
+from net import ProbDecoder, Discriminator, Encoder
 from updater import P2BUpdater
 from dataset import P2BDataset
 
@@ -26,7 +26,7 @@ def main():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--resume', '-r', default='',
                         help='Resume the training from snapshot')
-    parser.add_argument('--snapshot_interval', type=int, default=100,
+    parser.add_argument('--snapshot_interval', type=int, default=1000,
                         help='Interval of snapshot')
     parser.add_argument('--display_interval', type=int, default=100,
                         help='Interval of displaying log to console')
@@ -39,7 +39,7 @@ def main():
 
     # Set up a neural network to train
     enc = Encoder(in_ch=3)
-    dec = Decoder(out_ch=1)
+    dec = ProbDecoder(out_ch=1)
     dis = Discriminator(in_ch=3, out_ch=1)
 
     if args.gpu >= 0:
@@ -99,8 +99,8 @@ def main():
     # Run the training
     trainer.run()
 
-    chainer.serializers.save_npz(MODEL_PATH.joinpath('dec_model.npz'), dec)
-    chainer.serializers.save_npz(MODEL_PATH.joinpath('enc_model.npz'), enc)
+    chainer.serializers.save_npz(MODEL_PATH.joinpath('prob_dec_model.npz'), dec)
+    chainer.serializers.save_npz(MODEL_PATH.joinpath('prob_enc_model.npz'), enc)
 
 if __name__ == '__main__':
     main()
