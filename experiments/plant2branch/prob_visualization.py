@@ -19,9 +19,9 @@ def main():
         description='chainer implementation of pix2pix')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
         help='GPU ID (negative value indicates CPU)')
-    parser.add_argument('--dec', '-d', type=str, default='dec_model.npz',
+    parser.add_argument('--dec', '-d', type=str, default='prob_dec_model.npz',
         help='decoder model')
-    parser.add_argument('--enc', '-e', type=str, default='enc_model.npz',
+    parser.add_argument('--enc', '-e', type=str, default='prob_enc_model.npz',
         help='encoder model')
     parser.add_argument('--numval', '-n', type=int, default=10,
         help='encoder model')
