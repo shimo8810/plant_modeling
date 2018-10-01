@@ -79,7 +79,7 @@ class Decoder(chainer.Chain):
     def forward(self, hs):
         h = self.c0(hs[-1])
         for i in range(1, 8):
-            h = F.concat([h, F.dropout(hs[-i-1])])
+            h = F.concat([h, hs[-i-1]])
             if i < 7:
                 h = self['c%d' % i](h)
             else:
