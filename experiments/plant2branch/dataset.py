@@ -4,7 +4,7 @@ from chainer.dataset import dataset_mixin
 import numpy as np
 
 # PATH 関連
-FILE_PATH = Path().resolve()
+FILE_PATH = Path(__file__).resolve().parent
 ROOT_PATH = FILE_PATH.parent.parent
 DATASET_PATH = ROOT_PATH.joinpath('datasets')
 

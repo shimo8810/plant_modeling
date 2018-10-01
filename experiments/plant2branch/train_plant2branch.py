@@ -10,7 +10,7 @@ from updater import P2BUpdater
 from dataset import P2BDataset
 
 # PATH 関連
-FILE_PATH = Path().resolve()
+FILE_PATH = Path(__file__).resolve().parent
 ROOT_PATH = FILE_PATH.parent.parent
 RESULT_PATH = ROOT_PATH.joinpath('results/plant2branch')
 
