@@ -59,13 +59,14 @@ def main():
         plant_image = xp.array(plant_image).astype("f").transpose(2, 0, 1) / 128.0-1.0
         plant_image = plant_image.reshape(1, *plant_image.shape)
 
-        with chainer.no_backprop_mode():
-            probs = np.zeros((256, 256))
-            for _ in range(args.numval):
+        probs = np.zeros((256, 256))
+        for _ in range(args.numval):
+            with chainer.no_backprop_mode():
                 p2b_image = np.asarray(dec(enc(plant_image)).data.get()).reshape(256, 256)
-                probs += p2b_image
-            probs / args.numval
-            p2b_image = np.asarray(np.clip(probs * 128 + 128, 0.0, 255.0), dtype=np.uint8).reshape(256, 256)
+            p2b_image = (p2b_image + 1.0) / 2.0
+            probs = probs + p2b_image
+        probs /= args.numval
+        p2b_image = np.asarray(np.clip(probs * 255, 0.0, 255.0), dtype=np.uint8)
 
         p2b_images[i-1, :] = p2b_image
 
